@@ -21,8 +21,8 @@ struct SystemSnapshot {
             uploadHistory: Array(repeating: 0, count: 60),
             downloadHistory: Array(repeating: 0, count: 60)
         ),
-        thermal: ThermalMetric(cpuTemperatureCelsius: nil, availability: .unavailable),
-        fan: FanMetric(rpm: nil, availability: .unavailable)
+        thermal: ThermalMetric(cpuTemperatureCelsius: nil, availability: .unavailable, history: Array(repeating: 0, count: 60)),
+        fan: FanMetric(rpm: nil, availability: .unavailable, history: Array(repeating: 0, count: 60))
     )
 
     var menuBarSystemText: String {
@@ -90,11 +90,11 @@ struct NetworkMetric {
     }
 
     var totalUploadText: String {
-        MetricFormatter.bytes(totalUploadBytes)
+        MetricFormatter.megabytes(totalUploadBytes)
     }
 
     var totalDownloadText: String {
-        MetricFormatter.bytes(totalDownloadBytes)
+        MetricFormatter.megabytes(totalDownloadBytes)
     }
 
     var measuredDurationText: String {
@@ -105,16 +105,18 @@ struct NetworkMetric {
 struct ThermalMetric {
     var cpuTemperatureCelsius: Double?
     var availability: MetricAvailability
+    var history: [Double]
 
     var displayText: String {
         guard let cpuTemperatureCelsius else { return availability.displayText }
-        return String(format: "%.0f C", cpuTemperatureCelsius)
+        return String(format: "%.0f °C", cpuTemperatureCelsius)
     }
 }
 
 struct FanMetric {
     var rpm: Int?
     var availability: MetricAvailability
+    var history: [Double]
 
     var displayText: String {
         guard let rpm else { return availability.displayText }
@@ -180,6 +182,11 @@ enum MetricFormatter {
         formatter.allowedUnits = [.useBytes, .useKB, .useMB, .useGB, .useTB]
         formatter.countStyle = .binary
         return formatter.string(fromByteCount: Int64(value))
+    }
+
+    static func megabytes(_ value: UInt64) -> String {
+        let megabytes = Double(value) / (1024.0 * 1024.0)
+        return String(format: "%.1f MB", megabytes)
     }
 
     static func rate(_ value: Double) -> String {

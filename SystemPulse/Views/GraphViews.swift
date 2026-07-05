@@ -4,10 +4,16 @@ struct LineGraphView: View {
     let values: [Double]
     let colors: [Color]
 
+    init(values: [Double], colors: [Color]) {
+        self.values = values
+        self.colors = colors
+    }
+
     var body: some View {
         GeometryReader { proxy in
             ZStack {
                 graphGrid
+                zeroBaseline
 
                 AreaGraphShape(values: values)
                     .fill(
@@ -24,9 +30,11 @@ struct LineGraphView: View {
                         LinearGradient(colors: colors, startPoint: .leading, endPoint: .trailing),
                         style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
                     )
+
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .stroke(.primary.opacity(0.08), lineWidth: 0.8)
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         }
     }
 
@@ -40,6 +48,15 @@ struct LineGraphView: View {
                     Spacer()
                 }
             }
+        }
+    }
+
+    private var zeroBaseline: some View {
+        VStack {
+            Spacer()
+            Rectangle()
+                .fill(.primary.opacity(0.12))
+                .frame(height: 1)
         }
     }
 }

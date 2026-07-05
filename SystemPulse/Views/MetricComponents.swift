@@ -1,12 +1,18 @@
 import SwiftUI
 
 struct MetricCard<Content: View>: View {
-    @ViewBuilder var content: Content
+    private let fillsHeight: Bool
+    @ViewBuilder private var content: Content
+
+    init(fillsHeight: Bool = false, @ViewBuilder content: () -> Content) {
+        self.fillsHeight = fillsHeight
+        self.content = content()
+    }
 
     var body: some View {
         content
             .padding(12)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: fillsHeight ? .infinity : nil, alignment: .topLeading)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(.background.opacity(0.58))

@@ -72,11 +72,13 @@ final class SystemMonitorService: ObservableObject {
             ),
             thermal: ThermalMetric(
                 cpuTemperatureCelsius: thermalSample.cpuTemperatureCelsius,
-                availability: thermalSample.availability
+                availability: thermalSample.availability,
+                history: append(normalizedTemperature(thermalSample.cpuTemperatureCelsius), to: snapshot.thermal.history, limit: 60)
             ),
             fan: FanMetric(
                 rpm: fanSample.rpm,
-                availability: fanSample.availability
+                availability: fanSample.availability,
+                history: append(normalizedFanSpeed(fanSample.rpm), to: snapshot.fan.history, limit: 60)
             )
         )
     }
@@ -95,5 +97,15 @@ final class SystemMonitorService: ObservableObject {
     private func normalizedNetworkRate(_ value: Double) -> Double {
         let oneHundredMegabytes = 100.0 * 1024.0 * 1024.0
         return (value / oneHundredMegabytes).clampedUnit
+    }
+
+    private func normalizedTemperature(_ value: Double?) -> Double {
+        guard let value else { return 0 }
+        return (value / 100).clampedUnit
+    }
+
+    private func normalizedFanSpeed(_ value: Int?) -> Double {
+        guard let value else { return 0 }
+        return (Double(value) / 6000).clampedUnit
     }
 }
