@@ -80,3 +80,9 @@ Version `1.0` is the first stable release of PulseBar.
 The latest built app archive is available in:
 
 - `AppBuild/PulseBar-latest.zip`
+
+## License
+
+PulseBar is licensed under the MIT License.
+
+See [LICENSE](LICENSE) for the full license text.
