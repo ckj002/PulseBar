@@ -1,8 +1,19 @@
 # PulseBar
 
+<p align="center">
+  <img src="docs/images/pulsebar-icon.png" width="128" height="128" alt="PulseBar app icon">
+</p>
+
 PulseBar is a native macOS menu bar system monitor for quickly checking live Mac performance from the top bar.
 
 It focuses on compact real-time visibility, a polished popover panel, and detailed customization for how each metric appears in the menu bar.
+
+## Download
+
+Download the latest stable release:
+
+- [PulseBar 1.0](https://github.com/ckj002/PulseBar/releases/tag/v1.0)
+- [PulseBar-latest.zip](https://github.com/ckj002/PulseBar/releases/download/v1.0/PulseBar-latest.zip)
 
 ## Features
 
@@ -46,6 +57,10 @@ PulseBar includes extensive display controls:
 
 CPU temperature and fan RPM depend on hardware and macOS sensor access. PulseBar handles unavailable sensors safely and keeps the app running even when a value cannot be read.
 
+## Permissions
+
+PulseBar may ask for permission to control System Events when using the menu bar dark/light mode toggle. This is only used to switch the macOS appearance setting.
+
 ## Build
 
 Open the project in Xcode and build the `SystemPulse` scheme. The produced app is named `PulseBar.app`.
@@ -65,4 +80,3 @@ Version `1.0` is the first stable release of PulseBar.
 The latest built app archive is available in:
 
 - `AppBuild/PulseBar-latest.zip`
-

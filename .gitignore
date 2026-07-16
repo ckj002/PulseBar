@@ -3,3 +3,10 @@ build/
 *.xcuserdata/
 *.xcuserstate
 .DS_Store
+
+# Local duplicate files created outside the project workflow
+AppBuild/* 2.app/
+AppBuild/* 2.zip
+SystemPulse/* 2.plist
+SystemPulse/* 2.swift
+.gitignore 2
