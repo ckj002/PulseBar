@@ -42,7 +42,7 @@ struct MonitorPanelView: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            Text("System Pulse")
+            Text("PulseBar")
                 .font(.system(size: 16, weight: .semibold))
 
             Spacer()
@@ -78,7 +78,7 @@ struct MonitorPanelView: View {
 
     private func confirmQuit() {
         let alert = NSAlert()
-        alert.messageText = "Quit System Pulse?"
+        alert.messageText = "Quit PulseBar?"
         alert.informativeText = "System monitoring will stop until you open the app again."
         alert.alertStyle = .warning
         alert.addButton(withTitle: "Quit")
@@ -452,11 +452,6 @@ struct SettingsWindowView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Spacer()
-                    SettingsOrderModeToggle()
-                }
-
                 SettingsSection(title: "General", icon: "slider.horizontal.3") {
                     Toggle("Open at login", isOn: $settings.opensAtLogin)
                         .font(.system(size: 12, weight: .medium))
@@ -481,10 +476,6 @@ struct SettingsWindowView: View {
                         }
                     }
                     .font(.system(size: 12, weight: .medium))
-
-                    if settings.isMenuBarOrderModeEnabled {
-                        MenuBarOrderEditor()
-                    }
 
                     SettingRow {
                         Toggle("Usage gradient", isOn: $settings.usesUsageGradient)
@@ -717,80 +708,6 @@ struct SettingsWindowView: View {
             || settings.showsDiskInMenuBar
             || settings.showsNetworkInMenuBar
             || settings.showsTemperatureInMenuBar
-    }
-}
-
-struct SettingsOrderModeToggle: View {
-    @EnvironmentObject private var settings: SettingsStore
-
-    var body: some View {
-        Toggle("Order mode", isOn: $settings.isMenuBarOrderModeEnabled)
-            .toggleStyle(.checkbox)
-            .font(.system(size: 12, weight: .medium))
-            .padding(.trailing, 4)
-    }
-}
-
-private struct MenuBarOrderEditor: View {
-    @EnvironmentObject private var settings: SettingsStore
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text("Menu Bar Order")
-                .font(.system(size: 12, weight: .semibold))
-
-            HStack(spacing: 8) {
-                ForEach(SettingsStore.normalizedMenuBarMetricOrder(settings.menuBarMetricOrder)) { metric in
-                    HStack(spacing: 5) {
-                        Image(systemName: metric.icon)
-                            .font(.system(size: 10, weight: .semibold))
-                        Text(metric.title)
-                            .font(.system(size: 11, weight: .semibold))
-                            .lineLimit(1)
-
-                        VStack(spacing: 1) {
-                            orderButton(icon: "chevron.left", metric: metric, offset: -1)
-                            orderButton(icon: "chevron.right", metric: metric, offset: 1)
-                        }
-                    }
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 5)
-                    .background(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .fill(Color.primary.opacity(0.08))
-                    )
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func orderButton(icon: String, metric: MenuBarMetricKind, offset: Int) -> some View {
-        Button {
-            move(metric, by: offset)
-        } label: {
-            Image(systemName: icon)
-                .font(.system(size: 8, weight: .bold))
-                .frame(width: 11, height: 9)
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(canMove(metric, by: offset) ? Color.secondary : Color.secondary.opacity(0.35))
-        .disabled(!canMove(metric, by: offset))
-    }
-
-    private func move(_ metric: MenuBarMetricKind, by offset: Int) {
-        var order = SettingsStore.normalizedMenuBarMetricOrder(settings.menuBarMetricOrder)
-        guard let index = order.firstIndex(of: metric) else { return }
-        let newIndex = index + offset
-        guard order.indices.contains(newIndex) else { return }
-        order.swapAt(index, newIndex)
-        settings.menuBarMetricOrder = order
-    }
-
-    private func canMove(_ metric: MenuBarMetricKind, by offset: Int) -> Bool {
-        let order = SettingsStore.normalizedMenuBarMetricOrder(settings.menuBarMetricOrder)
-        guard let index = order.firstIndex(of: metric) else { return false }
-        return order.indices.contains(index + offset)
     }
 }
 

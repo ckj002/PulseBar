@@ -1015,6 +1015,7 @@ final class SettingsStore: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        Self.migrateLegacyDefaultsIfNeeded(defaults: defaults)
         Self.registerInitialDefaults(on: defaults)
         self.cpuGraphLowColor = Self.loadColor(key: Keys.cpuGraphLowColor, defaults: defaults)
             ?? Self.loadColor(key: Keys.cpuGraphColor, defaults: defaults)
@@ -1291,6 +1292,25 @@ final class SettingsStore: ObservableObject {
         values[Keys.networkPaddingInsets] = Data(#"{"right":0,"bottom":0,"top":0,"left":0}"#.utf8)
 
         defaults.register(defaults: values)
+    }
+
+    private static func migrateLegacyDefaultsIfNeeded(defaults: UserDefaults) {
+        let currentDomain = "dev.local.PulseBar"
+        let legacyDomain = "dev.local.SystemPulse"
+        let migrationKey = "didMigrateSystemPulseDefaults"
+
+        guard Bundle.main.bundleIdentifier == currentDomain,
+              defaults.object(forKey: migrationKey) == nil,
+              let legacyValues = defaults.persistentDomain(forName: legacyDomain)
+        else { return }
+
+        var currentValues = defaults.persistentDomain(forName: currentDomain) ?? [:]
+        for (key, value) in legacyValues where currentValues[key] == nil {
+            currentValues[key] = value
+        }
+        currentValues[migrationKey] = true
+        defaults.setPersistentDomain(currentValues, forName: currentDomain)
+        defaults.synchronize()
     }
 
     func settingsWindowContentSize() -> NSSize {

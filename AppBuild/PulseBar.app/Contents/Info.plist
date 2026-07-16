@@ -6,18 +6,20 @@
 	<string>25E246</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>PulseBar</string>
 	<key>CFBundleExecutable</key>
-	<string>SystemPulse</string>
+	<string>PulseBar</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleIconName</key>
 	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
-	<string>dev.local.SystemPulse</string>
+	<string>dev.local.PulseBar</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>SystemPulse</string>
+	<string>PulseBar</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -49,7 +51,7 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>System Pulse needs permission to switch the macOS dark and light appearance from the menu bar.</string>
+	<string>PulseBar needs permission to switch the macOS dark and light appearance from the menu bar.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSPrincipalClass</key>

@@ -1224,7 +1224,7 @@ final class StatusBarController: NSObject {
         var error: NSDictionary?
         guard let result = NSAppleScript(source: source)?.executeAndReturnError(&error), error == nil else {
             if let error {
-                NSLog("SystemPulse appearance toggle failed: \(error)")
+                NSLog("PulseBar appearance toggle failed: \(error)")
             }
             return false
         }
@@ -1262,7 +1262,7 @@ final class SettingsWindowController: NSObject {
             )
 
             let window = NSWindow(contentViewController: hostingController)
-            window.title = "System Pulse Settings"
+            window.title = "PulseBar Settings"
             window.styleMask = [.titled, .closable, .resizable]
             window.titleVisibility = .visible
             window.isReleasedWhenClosed = false

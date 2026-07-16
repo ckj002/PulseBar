@@ -12,6 +12,8 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundleDisplayName</key>
+	<string>PulseBar</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -25,7 +27,7 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>System Pulse needs permission to switch the macOS dark and light appearance from the menu bar.</string>
+	<string>PulseBar needs permission to switch the macOS dark and light appearance from the menu bar.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 </dict>
