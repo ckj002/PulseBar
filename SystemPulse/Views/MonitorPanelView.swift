@@ -26,6 +26,8 @@ struct MonitorPanelView: View {
                 FanCard(fan: monitor.snapshot.fan)
                     .frame(width: 168)
             }
+
+            DiskCard(disk: monitor.snapshot.disk)
         }
         .padding(12)
         .frame(width: 370)
@@ -35,7 +37,7 @@ struct MonitorPanelView: View {
                 .fill(.regularMaterial)
         )
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .environment(\.colorScheme, .dark)
+        .environment(\.colorScheme, settings.usesDarkAppearance ? .dark : .light)
     }
 
     private var header: some View {
@@ -302,6 +304,93 @@ private struct NetworkTotalInlineItem: View {
     }
 }
 
+private struct DiskCard: View {
+    let disk: DiskMetric
+
+    var body: some View {
+        MetricCard {
+            let freeText = disk.freeText(showsDecimal: true)
+            let detailText = disk.detailText(showsDecimal: true)
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline) {
+                    MetricTitle(icon: "internaldrive", title: "Disk")
+
+                    Spacer()
+
+                    Text(disk.availability == .available ? "\(Int((disk.remainingFraction * 100).rounded()))% free" : disk.availability.displayText)
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(freeText)
+                        .font(.system(size: 24, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                    Text("free")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
+
+                DiskCapacityBar(remainingFraction: disk.remainingFraction)
+
+                HStack {
+                    Text(detailText)
+                    Spacer()
+                    if let volumeName = disk.volumeName, !volumeName.isEmpty {
+                        Text(volumeName)
+                    }
+                }
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+            }
+        }
+    }
+}
+
+private struct DiskCapacityBar: View {
+    let remainingFraction: Double
+
+    var body: some View {
+        GeometryReader { proxy in
+            let remaining = remainingFraction.clampedUnit
+            let used = 1 - remaining
+            let usedWidth = proxy.size.width * used
+            let remainingWidth = proxy.size.width - usedWidth
+
+            ZStack {
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(.primary.opacity(0.08))
+
+                HStack(spacing: 0) {
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                colors: [.green, .cyan],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: usedWidth)
+
+                    Rectangle()
+                        .fill(.primary.opacity(0.18))
+                        .frame(width: remainingWidth)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .stroke(.primary.opacity(0.12), lineWidth: 0.8)
+            }
+        }
+        .frame(height: 12)
+    }
+}
+
 private struct ThermalCard: View {
     @EnvironmentObject private var settings: SettingsStore
     let thermal: ThermalMetric
@@ -369,6 +458,9 @@ struct SettingsWindowView: View {
                 }
 
                 SettingsSection(title: "General", icon: "slider.horizontal.3") {
+                    Toggle("Open at login", isOn: $settings.opensAtLogin)
+                        .font(.system(size: 12, weight: .medium))
+
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Menu Bar Display")
                             .font(.system(size: 12, weight: .semibold))
@@ -377,12 +469,15 @@ struct SettingsWindowView: View {
                                 .disabled(!canHideCPU)
                             Toggle("Memory", isOn: $settings.showsMemoryInMenuBar)
                                 .disabled(!canHideMemory)
+                            Toggle("Disk", isOn: $settings.showsDiskInMenuBar)
+                                .disabled(!canHideDisk)
                             Toggle("Network", isOn: $settings.showsNetworkInMenuBar)
                                 .disabled(!canHideNetwork)
                             Toggle("CPU Temp", isOn: $settings.showsTemperatureInMenuBar)
                                 .disabled(!canHideTemperature)
                             Toggle("Fan RPM", isOn: $settings.showsFanInMenuBar)
                                 .disabled(!canHideFan)
+                            Toggle("Theme", isOn: $settings.showsAppearanceToggleInMenuBar)
                         }
                     }
                     .font(.system(size: 12, weight: .medium))
@@ -498,6 +593,26 @@ struct SettingsWindowView: View {
                     .font(.system(size: 12, weight: .medium))
             }
 
+        case .disk:
+            SettingsSection(title: "Disk", icon: "internaldrive") {
+                SettingRow {
+                    Toggle("Label", isOn: $settings.showsDiskLabelInMenuBar)
+                    Toggle("Unit", isOn: $settings.showsDiskUnitInMenuBar)
+                    Toggle("Decimal capacity", isOn: $settings.showsDiskDecimalCapacity)
+                }
+                .font(.system(size: 12, weight: .medium))
+                SettingRow {
+                    SettingSlider(title: "Label text size", value: $settings.diskLabelFontSize, range: 6...14, step: 0.1)
+                    SettingSlider(title: "Value text size", value: $settings.diskValueFontSize, range: 8...20, step: 0.1)
+                    SettingSlider(title: "Unit text size", value: $settings.diskUnitFontSize, range: 6...14, step: 0.1)
+                }
+                SettingRow {
+                    SettingSlider(title: "Label-value spacing", value: $settings.diskLabelValueSpacing, range: 0...16, step: 0.5)
+                    SettingSlider(title: "Value-unit spacing", value: $settings.diskValueUnitSpacing, range: 0...12, step: 0.5)
+                }
+                SettingSlider(title: "Horizontal inset", value: $settings.diskHorizontalInset, range: 0...16, step: 0.5)
+            }
+
         case .temperature:
             SettingsSection(title: "CPU Temperature", icon: "thermometer.medium") {
                 SettingRow {
@@ -558,6 +673,7 @@ struct SettingsWindowView: View {
 
     private var canHideCPU: Bool {
         settings.showsMemoryInMenuBar
+            || settings.showsDiskInMenuBar
             || settings.showsNetworkInMenuBar
             || settings.showsTemperatureInMenuBar
             || settings.showsFanInMenuBar
@@ -565,6 +681,15 @@ struct SettingsWindowView: View {
 
     private var canHideMemory: Bool {
         settings.showsCPUInMenuBar
+            || settings.showsDiskInMenuBar
+            || settings.showsNetworkInMenuBar
+            || settings.showsTemperatureInMenuBar
+            || settings.showsFanInMenuBar
+    }
+
+    private var canHideDisk: Bool {
+        settings.showsCPUInMenuBar
+            || settings.showsMemoryInMenuBar
             || settings.showsNetworkInMenuBar
             || settings.showsTemperatureInMenuBar
             || settings.showsFanInMenuBar
@@ -573,6 +698,7 @@ struct SettingsWindowView: View {
     private var canHideNetwork: Bool {
         settings.showsCPUInMenuBar
             || settings.showsMemoryInMenuBar
+            || settings.showsDiskInMenuBar
             || settings.showsTemperatureInMenuBar
             || settings.showsFanInMenuBar
     }
@@ -580,6 +706,7 @@ struct SettingsWindowView: View {
     private var canHideTemperature: Bool {
         settings.showsCPUInMenuBar
             || settings.showsMemoryInMenuBar
+            || settings.showsDiskInMenuBar
             || settings.showsNetworkInMenuBar
             || settings.showsFanInMenuBar
     }
@@ -587,6 +714,7 @@ struct SettingsWindowView: View {
     private var canHideFan: Bool {
         settings.showsCPUInMenuBar
             || settings.showsMemoryInMenuBar
+            || settings.showsDiskInMenuBar
             || settings.showsNetworkInMenuBar
             || settings.showsTemperatureInMenuBar
     }
@@ -669,6 +797,7 @@ private struct MenuBarOrderEditor: View {
 private enum SettingsMetricTab: String, CaseIterable, Identifiable {
     case cpu
     case memory
+    case disk
     case network
     case temperature
     case fan
@@ -679,6 +808,7 @@ private enum SettingsMetricTab: String, CaseIterable, Identifiable {
         switch self {
         case .cpu: return "CPU"
         case .memory: return "Memory"
+        case .disk: return "Disk"
         case .network: return "Network"
         case .temperature: return "CPU Temp"
         case .fan: return "Fan RPM"
@@ -689,6 +819,7 @@ private enum SettingsMetricTab: String, CaseIterable, Identifiable {
         switch self {
         case .cpu: return "cpu"
         case .memory: return "memorychip"
+        case .disk: return "internaldrive"
         case .network: return "network"
         case .temperature: return "thermometer.medium"
         case .fan: return "fan"

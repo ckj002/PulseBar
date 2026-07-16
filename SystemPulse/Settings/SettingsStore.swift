@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import ServiceManagement
 import SwiftUI
 
 struct GraphColor: Codable, Equatable {
@@ -69,6 +70,28 @@ struct GraphColor: Codable, Equatable {
     }
 }
 
+enum LoginItemController {
+    static var isEnabled: Bool {
+        SMAppService.mainApp.status == .enabled
+    }
+
+    static func setEnabled(_ isEnabled: Bool) {
+        let service = SMAppService.mainApp
+
+        do {
+            if isEnabled {
+                if service.status != .enabled {
+                    try service.register()
+                }
+            } else if service.status != .notRegistered {
+                try service.unregister()
+            }
+        } catch {
+            NSLog("SystemPulse login item update failed: \(error.localizedDescription)")
+        }
+    }
+}
+
 struct MetricInsets: Codable, Equatable {
     var top: Double
     var right: Double
@@ -98,14 +121,17 @@ enum StatusMetricKind {
     case cpu
     case memory
     case network
+    case disk
 }
 
 enum MenuBarMetricKind: String, CaseIterable, Codable, Identifiable {
     case cpu
     case memory
+    case disk
     case network
     case fan
     case temperature
+    case appearance
 
     var id: String { rawValue }
 
@@ -113,9 +139,11 @@ enum MenuBarMetricKind: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .cpu: return "CPU"
         case .memory: return "Memory"
+        case .disk: return "Disk"
         case .network: return "Network"
         case .fan: return "Fan RPM"
         case .temperature: return "CPU Temp"
+        case .appearance: return "Theme"
         }
     }
 
@@ -123,9 +151,11 @@ enum MenuBarMetricKind: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .cpu: return "cpu"
         case .memory: return "memorychip"
+        case .disk: return "internaldrive"
         case .network: return "network"
         case .fan: return "fan"
         case .temperature: return "thermometer.medium"
+        case .appearance: return "circle.lefthalf.filled"
         }
     }
 
@@ -258,6 +288,21 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    @Published var opensAtLogin: Bool {
+        didSet {
+            save(opensAtLogin, key: Keys.opensAtLogin)
+            LoginItemController.setEnabled(opensAtLogin)
+            didChange.send()
+        }
+    }
+
+    @Published var usesDarkAppearance: Bool {
+        didSet {
+            save(usesDarkAppearance, key: Keys.usesDarkAppearance)
+            didChange.send()
+        }
+    }
+
     @Published var showsCPUInMenuBar: Bool {
         didSet {
             save(showsCPUInMenuBar, key: Keys.showsCPUInMenuBar)
@@ -279,6 +324,13 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    @Published var showsDiskInMenuBar: Bool {
+        didSet {
+            save(showsDiskInMenuBar, key: Keys.showsDiskInMenuBar)
+            didChange.send()
+        }
+    }
+
     @Published var showsCPULabelInMenuBar: Bool {
         didSet {
             save(showsCPULabelInMenuBar, key: Keys.showsCPULabelInMenuBar)
@@ -296,6 +348,13 @@ final class SettingsStore: ObservableObject {
     @Published var showsNetworkLabelInMenuBar: Bool {
         didSet {
             save(showsNetworkLabelInMenuBar, key: Keys.showsNetworkLabelInMenuBar)
+            didChange.send()
+        }
+    }
+
+    @Published var showsDiskLabelInMenuBar: Bool {
+        didSet {
+            save(showsDiskLabelInMenuBar, key: Keys.showsDiskLabelInMenuBar)
             didChange.send()
         }
     }
@@ -342,6 +401,20 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    @Published var showsDiskUnitInMenuBar: Bool {
+        didSet {
+            save(showsDiskUnitInMenuBar, key: Keys.showsDiskUnitInMenuBar)
+            didChange.send()
+        }
+    }
+
+    @Published var showsDiskDecimalCapacity: Bool {
+        didSet {
+            save(showsDiskDecimalCapacity, key: Keys.showsDiskDecimalCapacity)
+            didChange.send()
+        }
+    }
+
     @Published var showsTemperatureInMenuBar: Bool {
         didSet {
             save(showsTemperatureInMenuBar, key: Keys.showsTemperatureInMenuBar)
@@ -352,6 +425,13 @@ final class SettingsStore: ObservableObject {
     @Published var showsFanInMenuBar: Bool {
         didSet {
             save(showsFanInMenuBar, key: Keys.showsFanInMenuBar)
+            didChange.send()
+        }
+    }
+
+    @Published var showsAppearanceToggleInMenuBar: Bool {
+        didSet {
+            save(showsAppearanceToggleInMenuBar, key: Keys.showsAppearanceToggleInMenuBar)
             didChange.send()
         }
     }
@@ -593,6 +673,20 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    @Published var diskValueFontSize: Double {
+        didSet {
+            save(diskValueFontSize, key: Keys.diskValueFontSize)
+            didChange.send()
+        }
+    }
+
+    @Published var diskUnitFontSize: Double {
+        didSet {
+            save(diskUnitFontSize, key: Keys.diskUnitFontSize)
+            didChange.send()
+        }
+    }
+
     @Published var menuBarLabelFontSize: Double {
         didSet {
             save(menuBarLabelFontSize, key: Keys.menuBarLabelFontSize)
@@ -621,6 +715,13 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    @Published var diskLabelFontSize: Double {
+        didSet {
+            save(diskLabelFontSize, key: Keys.diskLabelFontSize)
+            didChange.send()
+        }
+    }
+
     @Published var cpuHorizontalInset: Double {
         didSet {
             save(cpuHorizontalInset, key: Keys.cpuHorizontalInset)
@@ -638,6 +739,13 @@ final class SettingsStore: ObservableObject {
     @Published var networkHorizontalInset: Double {
         didSet {
             save(networkHorizontalInset, key: Keys.networkHorizontalInset)
+            didChange.send()
+        }
+    }
+
+    @Published var diskHorizontalInset: Double {
+        didSet {
+            save(diskHorizontalInset, key: Keys.diskHorizontalInset)
             didChange.send()
         }
     }
@@ -771,6 +879,20 @@ final class SettingsStore: ObservableObject {
     @Published var networkUnitSpacing: Double {
         didSet {
             save(networkUnitSpacing, key: Keys.networkUnitSpacing)
+            didChange.send()
+        }
+    }
+
+    @Published var diskLabelValueSpacing: Double {
+        didSet {
+            save(diskLabelValueSpacing, key: Keys.diskLabelValueSpacing)
+            didChange.send()
+        }
+    }
+
+    @Published var diskValueUnitSpacing: Double {
+        didSet {
+            save(diskValueUnitSpacing, key: Keys.diskValueUnitSpacing)
             didChange.send()
         }
     }
@@ -917,20 +1039,27 @@ final class SettingsStore: ObservableObject {
         self.fanGraphHighColor = Self.loadColor(key: Keys.fanGraphHighColor, defaults: defaults) ?? .highUsageDefault
         self.usesUsageGradient = defaults.object(forKey: Keys.usesUsageGradient) as? Bool ?? true
         self.usesTwoDigitPercent = defaults.object(forKey: Keys.usesTwoDigitPercent) as? Bool ?? true
+        self.opensAtLogin = defaults.object(forKey: Keys.opensAtLogin) as? Bool ?? LoginItemController.isEnabled
+        self.usesDarkAppearance = defaults.object(forKey: Keys.usesDarkAppearance) as? Bool ?? true
         self.showsCPUInMenuBar = defaults.object(forKey: Keys.showsCPUInMenuBar) as? Bool ?? true
         self.showsMemoryInMenuBar = defaults.object(forKey: Keys.showsMemoryInMenuBar) as? Bool ?? true
         self.showsNetworkInMenuBar = defaults.object(forKey: Keys.showsNetworkInMenuBar) as? Bool ?? true
+        self.showsDiskInMenuBar = defaults.object(forKey: Keys.showsDiskInMenuBar) as? Bool ?? true
         self.showsCPULabelInMenuBar = defaults.object(forKey: Keys.showsCPULabelInMenuBar) as? Bool ?? true
         self.showsMemoryLabelInMenuBar = defaults.object(forKey: Keys.showsMemoryLabelInMenuBar) as? Bool ?? true
         self.showsNetworkLabelInMenuBar = defaults.object(forKey: Keys.showsNetworkLabelInMenuBar) as? Bool ?? true
+        self.showsDiskLabelInMenuBar = defaults.object(forKey: Keys.showsDiskLabelInMenuBar) as? Bool ?? true
         self.showsNetworkGraphInMenuBar = defaults.object(forKey: Keys.showsNetworkGraphInMenuBar) as? Bool ?? false
         self.showsCPUGraphInMenuBar = defaults.object(forKey: Keys.showsCPUGraphInMenuBar) as? Bool ?? true
         self.showsMemoryGraphInMenuBar = defaults.object(forKey: Keys.showsMemoryGraphInMenuBar) as? Bool ?? true
         self.showsCPUUnitInMenuBar = defaults.object(forKey: Keys.showsCPUUnitInMenuBar) as? Bool ?? true
         self.showsMemoryUnitInMenuBar = defaults.object(forKey: Keys.showsMemoryUnitInMenuBar) as? Bool ?? true
         self.showsNetworkUnitInMenuBar = defaults.object(forKey: Keys.showsNetworkUnitInMenuBar) as? Bool ?? true
+        self.showsDiskUnitInMenuBar = defaults.object(forKey: Keys.showsDiskUnitInMenuBar) as? Bool ?? true
+        self.showsDiskDecimalCapacity = defaults.object(forKey: Keys.showsDiskDecimalCapacity) as? Bool ?? false
         self.showsTemperatureInMenuBar = defaults.object(forKey: Keys.showsTemperatureInMenuBar) as? Bool ?? false
         self.showsFanInMenuBar = defaults.object(forKey: Keys.showsFanInMenuBar) as? Bool ?? false
+        self.showsAppearanceToggleInMenuBar = defaults.object(forKey: Keys.showsAppearanceToggleInMenuBar) as? Bool ?? true
         self.showsTemperatureLabelInMenuBar = defaults.object(forKey: Keys.showsTemperatureLabelInMenuBar) as? Bool ?? true
         self.showsFanLabelInMenuBar = defaults.object(forKey: Keys.showsFanLabelInMenuBar) as? Bool ?? true
         self.showsTemperatureGraphInMenuBar = defaults.object(forKey: Keys.showsTemperatureGraphInMenuBar) as? Bool ?? false
@@ -964,13 +1093,17 @@ final class SettingsStore: ObservableObject {
         self.memoryUnitFontSize = Self.loadDouble(key: Keys.memoryUnitFontSize, defaults: defaults, fallback: Self.loadDouble(key: Keys.memoryValueFontSize, defaults: defaults, fallback: 14))
         self.networkValueFontSize = Self.loadDouble(key: Keys.networkValueFontSize, defaults: defaults, fallback: 9.8)
         self.networkUnitFontSize = Self.loadDouble(key: Keys.networkUnitFontSize, defaults: defaults, fallback: 8.6)
+        self.diskValueFontSize = Self.loadDouble(key: Keys.diskValueFontSize, defaults: defaults, fallback: 11.5)
+        self.diskUnitFontSize = Self.loadDouble(key: Keys.diskUnitFontSize, defaults: defaults, fallback: 8.8)
         self.menuBarLabelFontSize = Self.loadDouble(key: Keys.menuBarLabelFontSize, defaults: defaults, fallback: 7.4)
         self.cpuLabelFontSize = Self.loadDouble(key: Keys.cpuLabelFontSize, defaults: defaults, fallback: 7.5)
         self.memoryLabelFontSize = Self.loadDouble(key: Keys.memoryLabelFontSize, defaults: defaults, fallback: 7.5)
         self.networkLabelFontSize = Self.loadDouble(key: Keys.networkLabelFontSize, defaults: defaults, fallback: 9.8)
+        self.diskLabelFontSize = Self.loadDouble(key: Keys.diskLabelFontSize, defaults: defaults, fallback: 8)
         self.cpuHorizontalInset = Self.loadDouble(key: Keys.cpuHorizontalInset, defaults: defaults, fallback: 0)
         self.memoryHorizontalInset = Self.loadDouble(key: Keys.memoryHorizontalInset, defaults: defaults, fallback: 0)
         self.networkHorizontalInset = Self.loadDouble(key: Keys.networkHorizontalInset, defaults: defaults, fallback: 0)
+        self.diskHorizontalInset = Self.loadDouble(key: Keys.diskHorizontalInset, defaults: defaults, fallback: 3)
         self.cpuVisualHeight = Self.loadDouble(key: Keys.cpuVisualHeight, defaults: defaults, fallback: 16.5)
         self.cpuGraphDisplaySeconds = Self.loadDouble(key: Keys.cpuGraphDisplaySeconds, defaults: defaults, fallback: 35)
         self.memoryVisualHeight = Self.loadDouble(key: Keys.memoryVisualHeight, defaults: defaults, fallback: 18)
@@ -990,6 +1123,8 @@ final class SettingsStore: ObservableObject {
         self.networkLabelValueSpacing = Self.loadDouble(key: Keys.networkLabelValueSpacing, defaults: defaults, fallback: 1)
         self.networkGraphValueSpacing = Self.loadDouble(key: Keys.networkGraphValueSpacing, defaults: defaults, fallback: 2)
         self.networkUnitSpacing = Self.loadDouble(key: Keys.networkUnitSpacing, defaults: defaults, fallback: 3)
+        self.diskLabelValueSpacing = Self.loadDouble(key: Keys.diskLabelValueSpacing, defaults: defaults, fallback: 3)
+        self.diskValueUnitSpacing = Self.loadDouble(key: Keys.diskValueUnitSpacing, defaults: defaults, fallback: 2)
         self.menuBarNetworkFontSize = Self.loadDouble(key: Keys.menuBarNetworkFontSize, defaults: defaults, fallback: 10)
         self.temperatureGraphValueSpacing = Self.loadDouble(key: Keys.temperatureGraphValueSpacing, defaults: defaults, fallback: 3)
         self.fanGraphValueSpacing = Self.loadDouble(key: Keys.fanGraphValueSpacing, defaults: defaults, fallback: 3)
@@ -1011,20 +1146,27 @@ final class SettingsStore: ObservableObject {
         self.networkPaddingInsets = Self.loadInsets(key: Keys.networkPaddingInsets, defaults: defaults) ?? .zero
         self.menuBarBorderColor = Self.loadColor(key: Keys.menuBarBorderColor, defaults: defaults) ?? .black
         self.menuBarBorderOpacity = Self.loadDouble(key: Keys.menuBarBorderOpacity, defaults: defaults, fallback: 0.85)
+
+        LoginItemController.setEnabled(opensAtLogin)
     }
 
     private static func registerInitialDefaults(on defaults: UserDefaults) {
         var values: [String: Any] = [
             Keys.usesUsageGradient: true,
             Keys.usesTwoDigitPercent: true,
+            Keys.opensAtLogin: false,
+            Keys.usesDarkAppearance: true,
             Keys.showsCPUInMenuBar: true,
             Keys.showsMemoryInMenuBar: true,
             Keys.showsNetworkInMenuBar: true,
+            Keys.showsDiskInMenuBar: true,
             Keys.showsTemperatureInMenuBar: true,
             Keys.showsFanInMenuBar: true,
+            Keys.showsAppearanceToggleInMenuBar: true,
             Keys.showsCPULabelInMenuBar: true,
             Keys.showsMemoryLabelInMenuBar: true,
             Keys.showsNetworkLabelInMenuBar: true,
+            Keys.showsDiskLabelInMenuBar: true,
             Keys.showsTemperatureLabelInMenuBar: false,
             Keys.showsFanLabelInMenuBar: false,
             Keys.showsCPUGraphInMenuBar: true,
@@ -1035,6 +1177,8 @@ final class SettingsStore: ObservableObject {
             Keys.showsCPUUnitInMenuBar: true,
             Keys.showsMemoryUnitInMenuBar: true,
             Keys.showsNetworkUnitInMenuBar: true,
+            Keys.showsDiskUnitInMenuBar: true,
+            Keys.showsDiskDecimalCapacity: false,
             Keys.showsTemperatureUnitInMenuBar: true,
             Keys.showsFanUnitInMenuBar: true,
             Keys.isMenuBarOrderModeEnabled: false,
@@ -1063,13 +1207,17 @@ final class SettingsStore: ObservableObject {
             Keys.memoryUnitFontSize: 14,
             Keys.networkValueFontSize: 9.8,
             Keys.networkUnitFontSize: 8.6,
+            Keys.diskValueFontSize: 11.5,
+            Keys.diskUnitFontSize: 8.8,
             Keys.menuBarLabelFontSize: 7.4,
             Keys.cpuLabelFontSize: 7.5,
             Keys.memoryLabelFontSize: 7.5,
             Keys.networkLabelFontSize: 9.8,
+            Keys.diskLabelFontSize: 8,
             Keys.cpuHorizontalInset: 0,
             Keys.memoryHorizontalInset: 0,
             Keys.networkHorizontalInset: 0,
+            Keys.diskHorizontalInset: 3,
             Keys.cpuVisualHeight: 16.5,
             Keys.cpuGraphDisplaySeconds: 35,
             Keys.memoryVisualHeight: 18,
@@ -1089,6 +1237,8 @@ final class SettingsStore: ObservableObject {
             Keys.networkLabelValueSpacing: 1,
             Keys.networkGraphValueSpacing: 2,
             Keys.networkUnitSpacing: 3,
+            Keys.diskLabelValueSpacing: 3,
+            Keys.diskValueUnitSpacing: 2,
             Keys.menuBarNetworkFontSize: 10,
             Keys.temperatureGraphValueSpacing: 3,
             Keys.fanGraphValueSpacing: 3,
@@ -1102,14 +1252,18 @@ final class SettingsStore: ObservableObject {
             Keys.settingsWindowHeight: initialSettingsWindowContentSize.height,
             "NSStatusItem Preferred Position dev.local.SystemPulse.cpu": 1055,
             "NSStatusItem Preferred Position dev.local.SystemPulse.memory": 985,
+            "NSStatusItem Preferred Position dev.local.SystemPulse.disk": 947,
             "NSStatusItem Preferred Position dev.local.SystemPulse.network": 909,
             "NSStatusItem Preferred Position dev.local.SystemPulse.fan": 835,
             "NSStatusItem Preferred Position dev.local.SystemPulse.temperature": 785,
+            "NSStatusItem Preferred Position dev.local.SystemPulse.appearance": 735,
             "NSStatusItem VisibleCC dev.local.SystemPulse.cpu": true,
             "NSStatusItem VisibleCC dev.local.SystemPulse.memory": true,
+            "NSStatusItem VisibleCC dev.local.SystemPulse.disk": true,
             "NSStatusItem VisibleCC dev.local.SystemPulse.network": true,
             "NSStatusItem VisibleCC dev.local.SystemPulse.fan": true,
-            "NSStatusItem VisibleCC dev.local.SystemPulse.temperature": true
+            "NSStatusItem VisibleCC dev.local.SystemPulse.temperature": true,
+            "NSStatusItem VisibleCC dev.local.SystemPulse.appearance": true
         ]
 
         values[Keys.menuBarMetricOrder] = encodedDefaultMenuBarMetricOrder
@@ -1210,6 +1364,8 @@ final class SettingsStore: ObservableObject {
         case .network:
             networkPaddingInsets = .zero
             networkMarginInsets = .zero
+        case .disk:
+            break
         }
     }
 
@@ -1223,7 +1379,7 @@ final class SettingsStore: ObservableObject {
     }
 
     private static var defaultMenuBarMetricOrder: [MenuBarMetricKind] {
-        [.cpu, .memory, .network, .fan, .temperature]
+        [.cpu, .memory, .disk, .network, .fan, .temperature, .appearance]
     }
 
     private static var encodedDefaultMenuBarMetricOrder: Data {
@@ -1259,7 +1415,7 @@ final class SettingsStore: ObservableObject {
     }
 
     private func saveStatusItemPreferredPositions(for order: [MenuBarMetricKind]) {
-        let positionSlots: [Double] = [1055, 985, 909, 835, 785]
+        let positionSlots: [Double] = [1055, 985, 947, 909, 835, 785, 735]
         for (index, metric) in Self.normalizedMenuBarMetricOrder(order).enumerated() {
             defaults.set(positionSlots[index], forKey: "NSStatusItem Preferred Position \(metric.statusItemAutosaveName)")
         }
@@ -1312,20 +1468,27 @@ private enum Keys {
     static let networkGraphColor = "networkGraphColor"
     static let usesUsageGradient = "usesUsageGradient"
     static let usesTwoDigitPercent = "usesTwoDigitPercent"
+    static let opensAtLogin = "opensAtLogin"
+    static let usesDarkAppearance = "usesDarkAppearance"
     static let showsCPUInMenuBar = "showsCPUInMenuBar"
     static let showsMemoryInMenuBar = "showsMemoryInMenuBar"
     static let showsNetworkInMenuBar = "showsNetworkInMenuBar"
+    static let showsDiskInMenuBar = "showsDiskInMenuBar"
     static let showsCPULabelInMenuBar = "showsCPULabelInMenuBar"
     static let showsMemoryLabelInMenuBar = "showsMemoryLabelInMenuBar"
     static let showsNetworkLabelInMenuBar = "showsNetworkLabelInMenuBar"
+    static let showsDiskLabelInMenuBar = "showsDiskLabelInMenuBar"
     static let showsNetworkGraphInMenuBar = "showsNetworkGraphInMenuBar"
     static let showsCPUGraphInMenuBar = "showsCPUGraphInMenuBar"
     static let showsMemoryGraphInMenuBar = "showsMemoryGraphInMenuBar"
     static let showsCPUUnitInMenuBar = "showsCPUUnitInMenuBar"
     static let showsMemoryUnitInMenuBar = "showsMemoryUnitInMenuBar"
     static let showsNetworkUnitInMenuBar = "showsNetworkUnitInMenuBar"
+    static let showsDiskUnitInMenuBar = "showsDiskUnitInMenuBar"
+    static let showsDiskDecimalCapacity = "showsDiskDecimalCapacity"
     static let showsTemperatureInMenuBar = "showsTemperatureInMenuBar"
     static let showsFanInMenuBar = "showsFanInMenuBar"
+    static let showsAppearanceToggleInMenuBar = "showsAppearanceToggleInMenuBar"
     static let showsTemperatureLabelInMenuBar = "showsTemperatureLabelInMenuBar"
     static let showsFanLabelInMenuBar = "showsFanLabelInMenuBar"
     static let showsTemperatureGraphInMenuBar = "showsTemperatureGraphInMenuBar"
@@ -1359,13 +1522,17 @@ private enum Keys {
     static let memoryUnitFontSize = "memoryUnitFontSize"
     static let networkValueFontSize = "networkValueFontSize"
     static let networkUnitFontSize = "networkUnitFontSize"
+    static let diskValueFontSize = "diskValueFontSize"
+    static let diskUnitFontSize = "diskUnitFontSize"
     static let menuBarLabelFontSize = "menuBarLabelFontSize"
     static let cpuLabelFontSize = "cpuLabelFontSize"
     static let memoryLabelFontSize = "memoryLabelFontSize"
     static let networkLabelFontSize = "networkLabelFontSize"
+    static let diskLabelFontSize = "diskLabelFontSize"
     static let cpuHorizontalInset = "cpuHorizontalInset"
     static let memoryHorizontalInset = "memoryHorizontalInset"
     static let networkHorizontalInset = "networkHorizontalInset"
+    static let diskHorizontalInset = "diskHorizontalInset"
     static let cpuVisualHeight = "cpuVisualHeight"
     static let cpuGraphDisplaySeconds = "cpuGraphDisplaySeconds"
     static let memoryVisualHeight = "memoryVisualHeight"
@@ -1385,6 +1552,8 @@ private enum Keys {
     static let networkLabelValueSpacing = "networkLabelValueSpacing"
     static let networkGraphValueSpacing = "networkGraphValueSpacing"
     static let networkUnitSpacing = "networkUnitSpacing"
+    static let diskLabelValueSpacing = "diskLabelValueSpacing"
+    static let diskValueUnitSpacing = "diskValueUnitSpacing"
     static let menuBarNetworkFontSize = "menuBarNetworkFontSize"
     static let temperatureGraphValueSpacing = "temperatureGraphValueSpacing"
     static let fanGraphValueSpacing = "fanGraphValueSpacing"

@@ -8,6 +8,7 @@ final class SystemMonitorService: ObservableObject {
     private let cpuReader = CPUReader()
     private let memoryReader = MemoryReader()
     private let networkReader = NetworkReader()
+    private let diskReader = DiskReader()
     private let thermalReader = ThermalReader()
     private let fanReader = FanReader()
     private var timer: Timer?
@@ -44,6 +45,7 @@ final class SystemMonitorService: ObservableObject {
         let cpuSample = cpuReader.read()
         let memorySample = memoryReader.read()
         let networkSample = networkReader.read()
+        let diskSample = diskReader.read()
         let thermalSample = thermalReader.read()
         let fanSample = fanReader.read()
 
@@ -69,6 +71,13 @@ final class SystemMonitorService: ObservableObject {
                 measuredDuration: networkSample.measuredDuration,
                 uploadHistory: append(normalizedNetworkRate(networkSample.uploadBytesPerSecond), to: snapshot.network.uploadHistory, limit: 60),
                 downloadHistory: append(normalizedNetworkRate(networkSample.downloadBytesPerSecond), to: snapshot.network.downloadHistory, limit: 60)
+            ),
+            disk: DiskMetric(
+                availableBytes: diskSample.availableBytes,
+                totalBytes: diskSample.totalBytes,
+                usage: diskSample.usage,
+                availability: diskSample.availability,
+                volumeName: diskSample.volumeName
             ),
             thermal: ThermalMetric(
                 cpuTemperatureCelsius: thermalSample.cpuTemperatureCelsius,

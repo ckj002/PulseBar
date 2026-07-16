@@ -60,9 +60,11 @@ final class StatusBarController: NSObject {
     private let settings: SettingsStore
     private var cpuItem: NSStatusItem!
     private var memoryItem: NSStatusItem!
+    private var diskItem: NSStatusItem!
     private var networkItem: NSStatusItem!
     private var temperatureItem: NSStatusItem!
     private var fanItem: NSStatusItem!
+    private var appearanceItem: NSStatusItem!
     private let popover = NSPopover()
     private let popoverPinState = PopoverPinState()
     private var pinnedPanel: NSPanel?
@@ -85,6 +87,7 @@ final class StatusBarController: NSObject {
             }
         }
 
+        applyAppAppearance()
         configureStatusItems()
         configurePopover()
         applyStatusItemLengths()
@@ -101,6 +104,7 @@ final class StatusBarController: NSObject {
             if menuBarOrder != self.appliedMenuBarOrder {
                 self.configureStatusItems()
             }
+            self.applyAppAppearance()
             self.applyStatusItemLengths()
             self.updatePopoverSize()
             self.updateStatusItems(with: self.monitor.snapshot)
@@ -120,30 +124,38 @@ final class StatusBarController: NSObject {
 
         cpuItem.autosaveName = NSStatusItem.AutosaveName("dev.local.SystemPulse.cpu")
         memoryItem.autosaveName = NSStatusItem.AutosaveName("dev.local.SystemPulse.memory")
+        diskItem.autosaveName = NSStatusItem.AutosaveName("dev.local.SystemPulse.disk")
         networkItem.autosaveName = NSStatusItem.AutosaveName("dev.local.SystemPulse.network")
         temperatureItem.autosaveName = NSStatusItem.AutosaveName("dev.local.SystemPulse.temperature")
         fanItem.autosaveName = NSStatusItem.AutosaveName("dev.local.SystemPulse.fan")
+        appearanceItem.autosaveName = NSStatusItem.AutosaveName("dev.local.SystemPulse.appearance")
 
-        [cpuItem, memoryItem, networkItem, temperatureItem, fanItem].forEach { item in
+        [cpuItem, memoryItem, diskItem, networkItem, temperatureItem, fanItem].forEach { item in
             item.button?.target = self
             item.button?.action = #selector(togglePopover(_:))
             item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
 
-        [cpuItem, memoryItem, networkItem, temperatureItem, fanItem].forEach { item in
+        appearanceItem.button?.target = self
+        appearanceItem.button?.action = #selector(toggleAppearanceMode(_:))
+        appearanceItem.button?.sendAction(on: [.leftMouseUp])
+
+        [cpuItem, memoryItem, diskItem, networkItem, temperatureItem, fanItem, appearanceItem].forEach { item in
             item.button?.imagePosition = .imageOnly
             item.button?.imageScaling = .scaleNone
         }
 
         cpuItem.button?.toolTip = "CPU"
         memoryItem.button?.toolTip = "Memory"
+        diskItem.button?.toolTip = "Disk"
         networkItem.button?.toolTip = "Network"
         temperatureItem.button?.toolTip = "CPU Temperature"
         fanItem.button?.toolTip = "Fan RPM"
+        appearanceItem.button?.toolTip = "Toggle dark/light mode"
     }
 
     private func removeConfiguredStatusItems() {
-        let existingItems: [NSStatusItem?] = [cpuItem, memoryItem, networkItem, temperatureItem, fanItem]
+        let existingItems: [NSStatusItem?] = [cpuItem, memoryItem, diskItem, networkItem, temperatureItem, fanItem, appearanceItem]
         existingItems.compactMap { $0 }.forEach {
             NSStatusBar.system.removeStatusItem($0)
         }
@@ -155,18 +167,22 @@ final class StatusBarController: NSObject {
             cpuItem = item
         case .memory:
             memoryItem = item
+        case .disk:
+            diskItem = item
         case .network:
             networkItem = item
         case .temperature:
             temperatureItem = item
         case .fan:
             fanItem = item
+        case .appearance:
+            appearanceItem = item
         }
     }
 
     private func configurePopover() {
         popover.behavior = popoverPinState.isPinned ? .applicationDefined : .transient
-        popover.appearance = NSAppearance(named: .darkAqua)
+        popover.appearance = currentAppearance
         popover.contentViewController = NSHostingController(
             rootView: MonitorPanelView()
                 .environmentObject(monitor)
@@ -204,6 +220,15 @@ final class StatusBarController: NSObject {
             clearStatusItem(networkItem)
         }
 
+        if settings.showsDiskInMenuBar {
+            setStatusImage(
+                diskStatusImage(disk: snapshot.disk),
+                on: diskItem
+            )
+        } else {
+            clearStatusItem(diskItem)
+        }
+
         if settings.showsTemperatureInMenuBar {
             setStatusImage(
                 temperatureStatusImage(
@@ -227,6 +252,8 @@ final class StatusBarController: NSObject {
         } else {
             clearStatusItem(fanItem)
         }
+
+        updateAppearanceStatusItem()
     }
 
     private func updatePopoverSize() {
@@ -240,12 +267,15 @@ final class StatusBarController: NSObject {
         let compactMetricHeight: CGFloat = 76
         let thermalHeight = compactMetricHeight + (settings.showsTemperatureGraphInPopover ? 44 : 0)
         let fanHeight = compactMetricHeight + (settings.showsFanGraphInPopover ? 44 : 0)
+        let diskHeight: CGFloat = 86
         let height = padding
             + headerHeight
             + interSectionSpacing
+            + 10
             + cpuHeight
             + max(memoryHeight, networkHeight)
             + max(thermalHeight, fanHeight)
+            + diskHeight
 
         popover.contentSize = NSSize(width: width, height: ceil(height))
         pinnedPanel?.setContentSize(popover.contentSize)
@@ -276,7 +306,7 @@ final class StatusBarController: NSObject {
         panel.contentViewController = hostingController
         panel.backgroundColor = .clear
         panel.isOpaque = false
-        panel.appearance = NSAppearance(named: .darkAqua)
+        panel.appearance = currentAppearance
         panel.hasShadow = true
         panel.isFloatingPanel = true
         panel.hidesOnDeactivate = false
@@ -299,14 +329,18 @@ final class StatusBarController: NSObject {
     private func applyStatusItemLengths() {
         cpuItem.isVisible = shouldShowCPUInMenuBar
         memoryItem.isVisible = settings.showsMemoryInMenuBar
+        diskItem.isVisible = settings.showsDiskInMenuBar
         networkItem.isVisible = settings.showsNetworkInMenuBar
         temperatureItem.isVisible = settings.showsTemperatureInMenuBar
         fanItem.isVisible = settings.showsFanInMenuBar
+        appearanceItem.isVisible = settings.showsAppearanceToggleInMenuBar
         cpuItem.length = shouldShowCPUInMenuBar ? 24 : 0
         memoryItem.length = settings.showsMemoryInMenuBar ? 24 : 0
+        diskItem.length = settings.showsDiskInMenuBar ? 24 : 0
         networkItem.length = settings.showsNetworkInMenuBar ? 24 : 0
         temperatureItem.length = settings.showsTemperatureInMenuBar ? 24 : 0
         fanItem.length = settings.showsFanInMenuBar ? 24 : 0
+        appearanceItem.length = settings.showsAppearanceToggleInMenuBar ? 24 : 0
     }
 
     private func setStatusImage(_ image: NSImage, on item: NSStatusItem) {
@@ -325,6 +359,37 @@ final class StatusBarController: NSObject {
         item.isVisible = false
     }
 
+    private func updateAppearanceStatusItem() {
+        guard settings.showsAppearanceToggleInMenuBar else {
+            clearStatusItem(appearanceItem)
+            return
+        }
+
+        let symbolName = settings.usesDarkAppearance ? "circle.lefthalf.filled" : "circle.righthalf.filled"
+        let configuration = NSImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
+        let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Toggle dark/light mode")?
+            .withSymbolConfiguration(configuration)
+            ?? NSImage(size: NSSize(width: 16, height: 16))
+        image.isTemplate = true
+
+        appearanceItem.isVisible = true
+        appearanceItem.button?.attributedTitle = NSAttributedString(string: "")
+        appearanceItem.button?.title = ""
+        appearanceItem.button?.image = image
+        appearanceItem.length = 24
+    }
+
+    private var currentAppearance: NSAppearance? {
+        NSAppearance(named: settings.usesDarkAppearance ? .darkAqua : .aqua)
+    }
+
+    private func applyAppAppearance() {
+        let appearance = currentAppearance
+        NSApp.appearance = appearance
+        popover.appearance = appearance
+        pinnedPanel?.appearance = appearance
+    }
+
     private var shouldShowCPUInMenuBar: Bool {
         settings.showsCPUInMenuBar || !hasVisibleMenuBarItem
     }
@@ -332,9 +397,11 @@ final class StatusBarController: NSObject {
     private var hasVisibleMenuBarItem: Bool {
         settings.showsCPUInMenuBar
             || settings.showsMemoryInMenuBar
+            || settings.showsDiskInMenuBar
             || settings.showsNetworkInMenuBar
             || settings.showsTemperatureInMenuBar
             || settings.showsFanInMenuBar
+            || settings.showsAppearanceToggleInMenuBar
     }
 
     private func cpuStatusImage(history: [Double], usage: Double) -> NSImage {
@@ -502,6 +569,29 @@ final class StatusBarController: NSObject {
         image.isTemplate = false
 
         return image
+    }
+
+    private func diskStatusImage(disk: DiskMetric) -> NSImage {
+        let parts = diskValueParts(disk.freeText(showsDecimal: settings.showsDiskDecimalCapacity))
+        return compactStatusImage(
+            label: settings.showsDiskLabelInMenuBar ? "DSK" : nil,
+            value: disk.availability == .available ? parts.number : "--",
+            unit: settings.showsDiskUnitInMenuBar && disk.availability == .available ? parts.unit : nil,
+            graph: nil,
+            labelFontSize: settings.diskLabelFontSize,
+            valueFontSize: settings.diskValueFontSize,
+            unitFontSize: settings.diskUnitFontSize,
+            labelValueSpacing: settings.diskLabelValueSpacing,
+            graphValueSpacing: 0,
+            valueUnitSpacing: settings.diskValueUnitSpacing,
+            horizontalInset: settings.diskHorizontalInset
+        )
+    }
+
+    private func diskValueParts(_ text: String) -> (number: String, unit: String) {
+        let parts = text.split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true)
+        guard parts.count == 2 else { return (text, "") }
+        return (String(parts[0]), String(parts[1]))
     }
 
     private func temperatureStatusImage(temperature: Double?, history: [Double]) -> NSImage {
@@ -1114,6 +1204,33 @@ final class StatusBarController: NSObject {
         } else {
             popover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
         }
+    }
+
+    @objc private func toggleAppearanceMode(_ sender: NSStatusBarButton) {
+        if !toggleSystemAppearance() {
+            settings.usesDarkAppearance.toggle()
+        }
+    }
+
+    private func toggleSystemAppearance() -> Bool {
+        let source = """
+        tell application "System Events"
+            tell appearance preferences
+                set dark mode to not dark mode
+                return dark mode
+            end tell
+        end tell
+        """
+        var error: NSDictionary?
+        guard let result = NSAppleScript(source: source)?.executeAndReturnError(&error), error == nil else {
+            if let error {
+                NSLog("SystemPulse appearance toggle failed: \(error)")
+            }
+            return false
+        }
+
+        settings.usesDarkAppearance = result.booleanValue
+        return true
     }
 }
 

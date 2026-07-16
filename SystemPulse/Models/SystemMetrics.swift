@@ -5,6 +5,7 @@ struct SystemSnapshot {
     var cpu: CPUMetric
     var memory: MemoryMetric
     var network: NetworkMetric
+    var disk: DiskMetric
     var thermal: ThermalMetric
     var fan: FanMetric
 
@@ -21,6 +22,7 @@ struct SystemSnapshot {
             uploadHistory: Array(repeating: 0, count: 60),
             downloadHistory: Array(repeating: 0, count: 60)
         ),
+        disk: DiskMetric(availableBytes: 0, totalBytes: 0, usage: 0, availability: .unavailable, volumeName: nil),
         thermal: ThermalMetric(cpuTemperatureCelsius: nil, availability: .unavailable, history: Array(repeating: 0, count: 60)),
         fan: FanMetric(rpm: nil, availability: .unavailable, history: Array(repeating: 0, count: 60))
     )
@@ -102,6 +104,49 @@ struct NetworkMetric {
     }
 }
 
+struct DiskMetric {
+    var availableBytes: UInt64
+    var totalBytes: UInt64
+    var usage: Double
+    var availability: MetricAvailability
+    var volumeName: String?
+
+    var remainingFraction: Double {
+        totalBytes > 0 ? (Double(availableBytes) / Double(totalBytes)).clampedUnit : 0
+    }
+
+    var freeText: String {
+        freeText(showsDecimal: false)
+    }
+
+    func freeText(showsDecimal: Bool) -> String {
+        guard availability == .available else { return availability.displayText }
+        return MetricFormatter.diskBytes(availableBytes, showsDecimal: showsDecimal)
+    }
+
+    var totalText: String {
+        totalText(showsDecimal: false)
+    }
+
+    func totalText(showsDecimal: Bool) -> String {
+        guard availability == .available else { return availability.displayText }
+        return MetricFormatter.diskBytes(totalBytes, showsDecimal: showsDecimal)
+    }
+
+    var detailText: String {
+        detailText(showsDecimal: false)
+    }
+
+    func detailText(showsDecimal: Bool) -> String {
+        guard availability == .available else { return availability.displayText }
+        return "\(freeText(showsDecimal: showsDecimal)) free / \(totalText(showsDecimal: showsDecimal)) total"
+    }
+
+    var usedPercentText: String {
+        MetricFormatter.percent(usage)
+    }
+}
+
 struct ThermalMetric {
     var cpuTemperatureCelsius: Double?
     var availability: MetricAvailability
@@ -124,7 +169,7 @@ struct FanMetric {
     }
 }
 
-enum MetricAvailability {
+enum MetricAvailability: Equatable {
     case available
     case unavailable
 
@@ -158,6 +203,14 @@ struct NetworkSample {
     var measuredDuration: TimeInterval
 }
 
+struct DiskSample {
+    var availableBytes: UInt64
+    var totalBytes: UInt64
+    var usage: Double
+    var availability: MetricAvailability
+    var volumeName: String?
+}
+
 struct ThermalSample {
     var cpuTemperatureCelsius: Double?
     var availability: MetricAvailability
@@ -182,6 +235,17 @@ enum MetricFormatter {
         formatter.allowedUnits = [.useBytes, .useKB, .useMB, .useGB, .useTB]
         formatter.countStyle = .binary
         return formatter.string(fromByteCount: Int64(value))
+    }
+
+    static func diskBytes(_ value: UInt64, showsDecimal: Bool = false) -> String {
+        guard value > 0 else { return "0 GB" }
+        let bytes = Double(value)
+        let terabyte = 1_000_000_000_000.0
+        let gigabyte = 1_000_000_000.0
+        let usesTerabytes = bytes >= terabyte
+        let unitValue = bytes / (usesTerabytes ? terabyte : gigabyte)
+        let format = showsDecimal ? "%.1f %@" : "%.0f %@"
+        return String(format: format, unitValue, usesTerabytes ? "TB" : "GB")
     }
 
     static func megabytes(_ value: UInt64) -> String {

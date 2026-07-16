@@ -15,6 +15,7 @@
 		C10000000000000000000006 /* NetworkReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000006 /* NetworkReader.swift */; };
 		C10000000000000000000007 /* ThermalReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000007 /* ThermalReader.swift */; };
 		C10000000000000000000008 /* FanReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000008 /* FanReader.swift */; };
+		C10000000000000000000010 /* DiskReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000010 /* DiskReader.swift */; };
 		C10000000000000000000009 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000009 /* SettingsStore.swift */; };
 		C1000000000000000000000A /* MonitorPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000A /* MonitorPanelView.swift */; };
 		C1000000000000000000000B /* MetricComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000B /* MetricComponents.swift */; };
@@ -31,11 +32,13 @@
 		B10000000000000000000006 /* NetworkReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkReader.swift; sourceTree = "<group>"; };
 		B10000000000000000000007 /* ThermalReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThermalReader.swift; sourceTree = "<group>"; };
 		B10000000000000000000008 /* FanReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FanReader.swift; sourceTree = "<group>"; };
+		B10000000000000000000010 /* DiskReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskReader.swift; sourceTree = "<group>"; };
 		B10000000000000000000009 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		B1000000000000000000000A /* MonitorPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonitorPanelView.swift; sourceTree = "<group>"; };
 		B1000000000000000000000B /* MetricComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricComponents.swift; sourceTree = "<group>"; };
 		B1000000000000000000000C /* GraphViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphViews.swift; sourceTree = "<group>"; };
 		B1000000000000000000000D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B10000000000000000000011 /* SystemPulse.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SystemPulse.entitlements; sourceTree = "<group>"; };
 		B1000000000000000000000E /* SystemPulse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SystemPulse.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B1000000000000000000000F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -72,6 +75,7 @@
 			children = (
 				B10000000000000000000001 /* SystemPulseApp.swift */,
 				B1000000000000000000000D /* Info.plist */,
+				B10000000000000000000011 /* SystemPulse.entitlements */,
 				B1000000000000000000000F /* Assets.xcassets */,
 				A10000000000000000000020 /* Models */,
 				A10000000000000000000021 /* Services */,
@@ -104,6 +108,7 @@
 				B10000000000000000000004 /* CPUReader.swift */,
 				B10000000000000000000005 /* MemoryReader.swift */,
 				B10000000000000000000006 /* NetworkReader.swift */,
+				B10000000000000000000010 /* DiskReader.swift */,
 				B10000000000000000000007 /* ThermalReader.swift */,
 				B10000000000000000000008 /* FanReader.swift */,
 			);
@@ -203,6 +208,7 @@
 				C10000000000000000000004 /* CPUReader.swift in Sources */,
 				C10000000000000000000005 /* MemoryReader.swift in Sources */,
 				C10000000000000000000006 /* NetworkReader.swift in Sources */,
+				C10000000000000000000010 /* DiskReader.swift in Sources */,
 				C10000000000000000000007 /* ThermalReader.swift in Sources */,
 				C10000000000000000000008 /* FanReader.swift in Sources */,
 				C10000000000000000000009 /* SettingsStore.swift in Sources */,
@@ -334,6 +340,7 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = SystemPulse/SystemPulse.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -361,6 +368,7 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = SystemPulse/SystemPulse.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
